@@ -1,0 +1,231 @@
+<html>
+	
+	<head>
+		
+		<style>
+			
+			body{
+				margin: 0;
+				background: #fcdfe3;
+			}
+			
+			canvas{
+				width: 100%;
+				height: 100%;
+				position:fixed;
+			}
+			
+			
+			
+		</style>
+		
+	</head>
+	
+	<body>
+
+		<canvas id="c"></canvas>
+				
+		<script src="perlin.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r72/three.js"></script>
+		<script>
+		
+			function normalize(x, min, max){
+				return (x-min) / (max-min);
+			}
+			
+			function scale(x, oldMin, oldMax, newMin, newMax){
+				return newMin + normalize(x, oldMin, oldMax) * (newMax - newMin);
+			}
+			
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+			var renderer = new THREE.WebGLRenderer({
+			    antialias: true,
+			    alpha: true,
+				canvas: document.getElementById('c')
+			});
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			
+			//scene.fog = new THREE.FogExp2(0xfcdfe3, 0.0002);
+			
+			var CAMERA_DISTANCE = 600;
+			var PLANE_WIDTH = 25000;
+			var PLANE_DEPTH = 10000;
+			var PLANE_Z = 0;
+			var SPEED = 1000;
+			var SEGMENT_SIZE = 200;
+			var WAVE_HEIGHT = 300;
+			var WAVE_FREQUENCY_X = 300;
+			var WAVE_FREQUENCY_Y = 2000;
+			
+			var vertexIndices = 'abc'.split('');
+			
+			var planeGeometry = new THREE.PlaneGeometry( PLANE_WIDTH, PLANE_DEPTH, PLANE_WIDTH/SEGMENT_SIZE, PLANE_DEPTH/(SEGMENT_SIZE*3) );
+			var planeMaterial = new THREE.MeshBasicMaterial({
+			    vertexColors: THREE.VertexColors,
+			    side: THREE.FrontSide
+			});
+			var plane = new THREE.Mesh( planeGeometry, planeMaterial );
+			plane.rotation.x -= Math.PI/2;
+			plane.position.z -= PLANE_DEPTH * 0.5 + CAMERA_DISTANCE;
+			
+			scene.add( plane );
+			
+			var underPlaneMaterial = new THREE.MeshBasicMaterial({
+			    vertexColors: THREE.VertexColors,
+			    side: THREE.BackSide
+			});
+			var underPlane = new THREE.Mesh( planeGeometry.clone(), underPlaneMaterial );
+			underPlane.rotation.x -= Math.PI/2;
+			underPlane.position.z -= PLANE_DEPTH * 0.5 + CAMERA_DISTANCE;
+			
+			scene.add(underPlane);
+			initVertexColors(planeGeometry);
+			initVertexColors(underPlane.geometry);
+			
+			var bgGeometry = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_DEPTH, PLANE_WIDTH/SEGMENT_SIZE, 1);
+			var bgMaterial = new THREE.MeshBasicMaterial({color: 0x5104e8});
+			var bg = new THREE.Mesh(bgGeometry, bgMaterial);
+			
+			bg.position.z -= PLANE_DEPTH + CAMERA_DISTANCE;
+			bg.position.y -= PLANE_DEPTH * 0.5;
+			
+			scene.add(bg);
+			
+			var LOGO_RATIO = 1092/523;
+			var LOGO_WIDTH = 1200;
+			
+			var logoGeometry = new THREE.PlaneGeometry(LOGO_WIDTH, LOGO_WIDTH/LOGO_RATIO);
+			var logoTexture = THREE.ImageUtils.loadTexture('logo.png');
+			logoTexture.minFilter = THREE.LinearFilter;
+			var logoMaterial = new THREE.MeshBasicMaterial({
+				map: logoTexture,
+				transparent: true
+			});
+			var logo = new THREE.Mesh(logoGeometry, logoMaterial);
+			
+			scene.add(logo);
+			
+			logo.position.z -= CAMERA_DISTANCE + PLANE_DEPTH / 20;
+			
+			camera.position.y = 0//1000;
+			
+			scene.add( plane );
+			
+			noise.seed(0.692253922810778);
+			
+			var pink = {
+				r: 1,
+				g: 0.478,
+				b: 0.952
+			}
+			
+			var cyan = {
+				r: 0.019,
+				g: 0.89,
+				b: 0.9
+			}
+			
+			var blue = {
+				r: 0.317,
+				g: 0.02,
+				b: 0.9
+			}
+			
+			var purple = {
+				r: 0.59,
+				g: 0.11,
+				b: 0.99
+			}
+			
+			var peach = {
+				r: 0.98,
+				g: 0.87,
+				b: 0.89
+			}
+			
+			function initVertexColors(geometry){
+				
+				for(var i = 0; i < geometry.faces.length; ++i){
+				    
+				    for(var j = 0; j < 3; ++j){
+				        
+				        geometry.faces[i].vertexColors[ j ] = new THREE.Color(0x0000ff);
+				        
+				    }
+				    
+				}
+				
+			}
+			
+			function colorPlane(geometry, min, max, fog){
+				
+				var v, f, i, j;
+
+			    for(i = 0; i < geometry.faces.length; ++i){
+			        
+			        f = geometry.faces[i];
+			        
+			        for(j = 0; j < 3; ++j){
+			            
+			            v = geometry.vertices[ f[ vertexIndices[j] ] ];
+			            
+			            tmpColor.r = scale(v.z, -WAVE_HEIGHT/2, WAVE_HEIGHT/2, min.r, max.r);
+			            tmpColor.g = scale(v.z, -WAVE_HEIGHT/2, WAVE_HEIGHT/2, min.g, max.g);
+			            tmpColor.b = scale(v.z, -WAVE_HEIGHT/2, WAVE_HEIGHT/2, min.b, max.b);
+			            
+			            tmpColor.r = scale(v.y, -PLANE_DEPTH/2, PLANE_DEPTH/2, tmpColor.r, fog.r);
+			            tmpColor.g = scale(v.y, -PLANE_DEPTH/2, PLANE_DEPTH/2, tmpColor.g, fog.g);
+			            tmpColor.b = scale(v.y, -PLANE_DEPTH/2, PLANE_DEPTH/2, tmpColor.b, fog.b);
+			            
+			            f.vertexColors[j].copy( tmpColor );
+			        }
+			        
+			    }
+			    
+				geometry.colorsNeedUpdate = true;
+			    
+			}
+			
+			var tmpColor = new THREE.Color();
+			
+			function render(){
+			    
+			    var now = Date.now() / SPEED;
+			    var v, z;
+			    
+			    for(var i = 0; i < planeGeometry.vertices.length; ++i){
+			    	
+			        v = planeGeometry.vertices[i];
+			        
+			        if(v.y === PLANE_DEPTH / 2) continue;
+			        
+			        z = PLANE_Z + noise.perlin3(v.x / 2000, v.y / 2000, now/5) * WAVE_HEIGHT;
+			        v.z = z;
+			        underPlane.geometry.vertices[i].z = z;
+			    }
+			    
+				planeGeometry.verticesNeedUpdate = true;
+				underPlane.geometry.verticesNeedUpdate = true;
+				
+
+				colorPlane(planeGeometry, pink, purple, peach);
+				colorPlane(underPlane.geometry, peach, cyan, blue);
+				
+				renderer.render(scene, camera);
+				requestAnimationFrame(render);
+
+				
+				//camera.position.y -= 1;
+				//camera.lookAt(plane.position);
+				
+			}
+			
+			render();
+			
+			
+		</script>
+		
+	</body>
+	
+</html>
