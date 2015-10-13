@@ -24,7 +24,17 @@
 	<body>
 
 		<canvas id="c"></canvas>
-				
+		
+		<div style="position: fixed">
+			<span class="js-middle">&bull;</span>
+			<span class="js-top">&bull;</span>
+			<span class="js-bottom">&bull;</span>
+			<span class="js-side">&bull;</span>
+		</div>
+		
+		<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+		<script src="underscore.js"></script>
+		<script src="tween.js"></script>
 		<script src="perlin.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r72/three.js"></script>
 		<script>
@@ -52,7 +62,7 @@
 			var PLANE_WIDTH = 25000;
 			var PLANE_DEPTH = 10000;
 			var PLANE_Z = 0;
-			var SPEED = 1000;
+			var SPEED = 1500;
 			var SEGMENT_SIZE = 200;
 			var WAVE_HEIGHT = 300;
 			var WAVE_FREQUENCY_X = 300;
@@ -108,7 +118,8 @@
 			
 			logo.position.z -= CAMERA_DISTANCE + PLANE_DEPTH / 20;
 			
-			camera.position.y = 0//1000;
+			camera.position.y = 0;
+			//camera.rotation.z = Math.PI / 2;
 			
 			scene.add( plane );
 			
@@ -213,15 +224,87 @@
 				colorPlane(underPlane.geometry, peach, cyan, blue);
 				
 				renderer.render(scene, camera);
+				
+				Tween.tick();
+				
 				requestAnimationFrame(render);
 
 				
-				//camera.position.y -= 1;
+				// camera.position.y -= 1;
 				//camera.lookAt(plane.position);
 				
 			}
 			
 			render();
+			
+			var TRANSITION_SPEED = 2000;
+			
+			function tweenCamera(x, y, z, rx, ry, rz){
+				
+				Tween.clear('camera');
+				
+				Tween({
+					id: 'camera',
+					from: camera.position.x,
+					to: x,
+					duration: TRANSITION_SPEED,
+					step: function(x){
+						camera.position.x = x;
+					}
+				},{
+					id: 'camera',
+					from: camera.position.y,
+					to: y,
+					duration: TRANSITION_SPEED,
+					step: function(y){
+						camera.position.y = y;
+					}
+				},{
+					id: 'camera',
+					from: camera.position.z,
+					to: z,
+					duration: TRANSITION_SPEED,
+					step: function(z){
+						camera.position.z = z;
+					}
+				},{
+					id: 'camera',
+					from: camera.rotation.x,
+					to: rx,
+					duration: TRANSITION_SPEED,
+					step: function(r){
+						camera.rotation.x = r;
+					}
+				},{
+					id: 'camera',
+					from: camera.rotation.y,
+					to: ry,
+					duration: TRANSITION_SPEED,
+					step: function(r){
+						camera.rotation.y = r;
+					}
+				},{
+					id: 'camera',
+					from: camera.rotation.z,
+					to: rz,
+					duration: TRANSITION_SPEED,
+					step: function(r){
+						camera.rotation.z = r;
+					}
+				});
+				
+			}
+			
+			function clickTweenCamera(element, x, y, r){
+				$(element).click(function(){
+					tweenCamera(x,y,r);
+				})
+			}
+			
+			clickTweenCamera('.js-middle', 0, 0, 0);
+			clickTweenCamera('.js-top', 0, 1000, 0);
+			clickTweenCamera('.js-bottom', 0, -1000, 0);
+			clickTweenCamera('.js-side', 0, 0, -Math.PI/2);
 			
 			
 		</script>
